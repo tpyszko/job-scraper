@@ -2,7 +2,7 @@ name: Daily Job Scraper
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # codziennie o 8:00 CET
+    - cron: '0 6 * * *'  # codziennie o 8:00 CET (assuming UTC, so 6:00 UTC is 8:00 CET in summer, 7:00 CET in winter)
   workflow_dispatch:
 
 jobs:
@@ -17,6 +17,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Setup ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+        # This action typically adds chromedriver to the PATH
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -25,8 +32,17 @@ jobs:
 
       - name: Commit and push results
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add *.csv
-          git commit -m "Add new offers [$(date +'%Y-%m-%d')]" || echo "No changes to commit"
-          git push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if there are any changes to CSV files
+          if [[ -n $(git status --porcelain *.csv) ]]; then
+            echo "Changes found in CSV files. Committing new offers."
+            git add *.csv
+            git commit -m "Scraper: Add new job offers [$(date +'%Y-%m-%d')]"
+            git push
+          else
+            echo "No new job offers to commit. Creating an empty commit to signify the scraper ran."
+            git commit --allow-empty -m "Scraper: Ran on [$(date +'%Y-%m-%d')] - No new offers found"
+            git push
+          fi
