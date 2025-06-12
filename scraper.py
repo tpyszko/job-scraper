@@ -46,6 +46,4 @@ def run_scraper():
         print(f"Nie znaleziono żadnych unikalnych nowych ofert do zapisania w pliku {today_file}.")
 
 if __name__ == "__main__":
-
-if __name__ == "__main__":
     run_scraper()
